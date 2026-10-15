@@ -50,7 +50,7 @@ Variáveis opcionais: GEMINI_MODEL e GEMINI_FALLBACK_MODELS (lista separada por 
 
 ## Verificação
 
-Execute npm test. Há 26 testes automatizados cobrindo leitura, pesquisa, fontes, redirecionamentos, alternância de modelos, falhas e sintaxe do código da interface.
+Execute npm test. Há 29 testes automatizados cobrindo leitura, pesquisa, fontes, redirecionamentos, alternância de modelos, falhas e sintaxe do código da interface.
 
 Execute npm run diagnose para testar busca e leitura de páginas reais sem usar o Gemini.
 
