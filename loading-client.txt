@@ -1,0 +1,31 @@
+ lastRequest={message,mode};
+ const pending=document.createElement('article');pending.className='message model pending-message';
+ const pendingLabel=document.createElement('div');pendingLabel.className='label';pendingLabel.textContent='Conversas Bíblicas';
+ const pendingState=document.createElement('div');pendingState.className='pending-state';pendingState.setAttribute('role','status');pendingState.setAttribute('aria-live','polite');
+ const dots=document.createElement('span');dots.className='typing-dots';dots.setAttribute('aria-hidden','true');for(let i=0;i<3;i++)dots.append(document.createElement('span'));
+ const pendingText=document.createElement('span');pendingText.textContent='Pesquisando o assunto nas publicações…';pendingState.append(dots,pendingText);
+ const hint=document.createElement('p');hint.className='pending-hint';hint.textContent='Vou consultar as fontes para responder com cuidado.';
+ const cancel=document.createElement('button');cancel.type='button';cancel.className='source-preview';cancel.textContent='Cancelar';
+ pending.append(pendingLabel,pendingState,hint,cancel);$('messages').append(pending);pending.scrollIntoView({block:'nearest',behavior:'instant'});$('status').textContent='';
+ const controller=new AbortController();let userCancelled=false;
+ cancel.onclick=()=>{userCancelled=true;controller.abort()};
+ const phase=setTimeout(()=>{pendingText.textContent='Consultando as fontes e preparando a resposta…'},12000);
+ const patience=setTimeout(()=>{hint.textContent='Ainda estou trabalhando na sua pergunta. Obrigado por aguardar.'},35000);
+ const deadline=setTimeout(()=>controller.abort(),300000);
+ function pause(ms){return new Promise((resolve,reject)=>{if(controller.signal.aborted){reject(new DOMException('Cancelado','AbortError'));return}const timer=setTimeout(()=>{controller.signal.removeEventListener('abort',onAbort);resolve()},ms);function onAbort(){clearTimeout(timer);reject(new DOMException('Cancelado','AbortError'))}controller.signal.addEventListener('abort',onAbort,{once:true})})}
+ try{
+  let d;
+  for(let attempt=0;attempt<2;attempt++){
+   try{
+    const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message,mode,history:history.slice(-4)}),signal:controller.signal});
+    const payload=await r.json();
+    if(!r.ok||payload.retryable){const error=new Error(payload.error||'Não consegui consultar as fontes desta vez.');error.retryable=payload.retryable===true||(!('retryable' in payload)&&(r.status===429||r.status>=500));throw error;}
+    d=payload;break;
+   }catch(error){if(error.name==='AbortError'||controller.signal.aborted)throw error;const transient=error.retryable===true||error instanceof TypeError;if(attempt===0&&transient){clearTimeout(phase);pendingText.textContent='A consulta foi interrompida. Estou tentando novamente…';hint.textContent='Você não precisa reenviar a pergunta.';await pause(2500);continue;}throw error;}
+  }
+  pending.remove();const sources=d.sources||[];const options={question:message,checkedAt:d.checkedAt,insufficient:d.insufficient||!!d.search};const box=add('model',d.text,sources,options);
+  if(d.search&&safeURL(d.search)){const link=document.createElement('a');link.href=d.search;link.textContent='Pesquisar diretamente no jw.org ↗';link.target='_blank';link.rel='noopener noreferrer';link.className='search-shortcut';box.append(link);}
+  transcript.push({role:'model',text:d.text,sources,options});history.push({role:'user',text:message},{role:'model',text:d.text});history=history.slice(-4);persist();$('status').textContent=d.insufficient?'Não encontrei apoio suficiente nas fontes.':'Resposta concluída.';box.focus({preventScroll:true});box.scrollIntoView({block:'start',behavior:'instant'});
+ }catch(error){pending.remove();const text=userCancelled?'Consulta cancelada. Sua pergunta continua no campo de mensagem.':controller.signal.aborted?'A consulta demorou mais que o esperado. Não consegui concluir desta vez.':'Não consegui concluir a consulta, mesmo após as tentativas automáticas. Tente novamente em alguns instantes.';const box=add('model',text);box.setAttribute('role','status');$('status').textContent=userCancelled?'Consulta cancelada.':(error.message||text);$('retry').hidden=false;$('question').value=message;
+ }finally{clearTimeout(phase);clearTimeout(patience);clearTimeout(deadline);pending.remove();setBusy(false)}
+}

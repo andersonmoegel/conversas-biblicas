@@ -1,0 +1,10 @@
+{
+  "name": "conversas-biblicas",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server.mjs",
+    "test": "node --test test.mjs flow.test.mjs search.test.mjs reader.test.mjs citations.test.mjs retry.test.mjs fallback.test.mjs",
+    "diagnose": "node diagnose.mjs"
+  }
+}

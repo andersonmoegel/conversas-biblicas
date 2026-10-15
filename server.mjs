@@ -1,0 +1,6 @@
+import http from 'node:http';
+import {stat} from 'node:fs/promises';
+let worker, loadedVersion;
+async function currentWorker(){const version=(await stat(new URL('./worker/index.js',import.meta.url))).mtimeMs;if(version!==loadedVersion){worker=(await import('./worker/index.js?v='+version)).default;loadedVersion=version;}return worker;}
+const port=Number(process.env.PORT||3000);
+http.createServer(async(req,res)=>{try{const chunks=[];let size=0;for await(const c of req){size+=c.length;if(size>24000){res.writeHead(413);res.end('Pedido muito grande');return;}chunks.push(c);}const request=new Request('http://localhost:'+port+req.url,{method:req.method,headers:req.headers,...(!['GET','HEAD'].includes(req.method)?{body:Buffer.concat(chunks)}:{})});const active=await currentWorker();const response=await active.fetch(request,process.env);res.writeHead(response.status,{'Cache-Control':'no-store',...Object.fromEntries(response.headers)});res.end(Buffer.from(await response.arrayBuffer()));}catch{res.writeHead(500);res.end('Erro interno');}}).on('error',error=>{console.error(error.code==='EADDRINUSE'?'A porta '+port+' já está ocupada. Encerre o servidor antigo com Ctrl+C no terminal dele e abra esta versão novamente.':'Não foi possível iniciar o servidor.');process.exitCode=1;}).listen(port,'127.0.0.1',()=>console.log('Local: http://localhost:'+port));

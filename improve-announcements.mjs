@@ -1,0 +1,1 @@
+import fs from 'node:fs';const p='worker/index.js';let s=fs.readFileSync(p,'utf8').replace("$('messages').setAttribute('aria-busy',String(value))","$('form').setAttribute('aria-busy',String(value))");fs.writeFileSync(p,s);

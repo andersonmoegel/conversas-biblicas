@@ -1,0 +1,11 @@
+import fs from 'node:fs';const p='worker/index.js';let s=fs.readFileSync(p,'utf8');
+s=s.replace('<div class="composer"><form','<div class="composer"><div class="composer-activity" id="activity" aria-hidden="true" hidden><span class="activity-light"></span><span>Pesquisando e preparando sua resposta</span><span class="activity-time" id="activity-time">0s</span></div><form');
+s=s.replace("function setBusy(value){busy=value;", "function setBusy(value){busy=value;document.body.classList.toggle('is-researching',value);$('activity').hidden=!value;$('send').textContent=value?'Pesquisando…':'Enviar ↑';");
+s=s.replace("pendingLabel.textContent='Conversas Bíblicas';", "pendingLabel.textContent='Conversas Bíblicas • Consultando fontes';");
+s=s.replace("pending.scrollIntoView({block:'nearest',behavior:'instant'});", "requestAnimationFrame(()=>pending.scrollIntoView({block:'center',behavior:'instant'}));");
+s=s.replace(" const deadline=setTimeout(()=>controller.abort(),300000);", " const began=Date.now();$('activity-time').textContent='0s';const elapsed=setInterval(()=>{$('activity-time').textContent=Math.floor((Date.now()-began)/1000)+'s'},1000);\n const deadline=setTimeout(()=>controller.abort(),300000);");
+s=s.replace("finally{clearTimeout(phase);clearTimeout(patience);clearTimeout(deadline);pending.remove();setBusy(false)}", "finally{clearInterval(elapsed);clearTimeout(phase);clearTimeout(patience);clearTimeout(deadline);pending.remove();setBusy(false)}");
+s=s.replace("<span>Estudo e reflexão</span>","<span class=\"header-title\">Conversas Bíblicas <small>Um momento para aprender e refletir</small></span>");
+s=s.replace("<h1>Uma boa conversa<br>começa com <i>uma pergunta.</i></h1>","<h1>Suas perguntas merecem<br><i>atenção e cuidado.</i></h1>");
+s=s.replace("Vamos buscar juntos respostas nas publicações do jw.org.","Encontre explicações acolhedoras, com textos bíblicos e fontes para continuar seu estudo.");
+s=s.replace('</style>',fs.readFileSync('polish-style.txt','utf8')+'</style>');fs.writeFileSync(p,s);

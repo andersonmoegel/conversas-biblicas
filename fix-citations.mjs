@@ -1,0 +1,4 @@
+import fs from 'node:fs';const p='worker/index.js';let s=fs.readFileSync(p,'utf8');
+const helper=`export function normalizeCitations(text){return text.replace(/\\[(\\d+(?:\\s*(?:[,;]|[-–])\\s*\\d+)*)\\]/g,(match,group)=>{const numbers=[];for(const part of group.split(/[,;]/)){const range=part.trim().split(/[-–]/).map(Number);if(range.length===1)numbers.push(range[0]);else if(range[1]>=range[0]&&range[1]-range[0]<50){for(let n=range[0];n<=range[1];n++)numbers.push(n);}else return match;}return [...new Set(numbers)].map(n=>'['+n+']').join(' ');});}\n`;
+s=s.replace('export function excerpt(',helper+'export function excerpt(');
+s=s.replace('   const cited=[...result.text.matchAll','   result.text=normalizeCitations(result.text);\n   const cited=[...result.text.matchAll');fs.writeFileSync(p,s);
